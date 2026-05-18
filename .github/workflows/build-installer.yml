@@ -158,54 +158,76 @@ jobs:
           Write-Host "NSSM installed:"
           Get-ChildItem "$dest\win64\nssm.exe" | Format-List Name, Length
 
-     # ----- Install Inno Setup -----
+    # ----- Install Inno Setup -----
       - name: Install Inno Setup
         shell: pwsh
         run: |
-          # Try latest version first, fall back to known-good versions
-          $urls = @(
-            "https://files.jrsoftware.org/is/6/innosetup-6.7.1.exe",
-            "https://files.jrsoftware.org/is/6/innosetup-6.6.1.exe",
-            "https://files.jrsoftware.org/is/6/innosetup-6.5.4.exe"
-          )
+          # Strategy 1 (preferred): use winget — always grabs the current version
+          # Strategy 2 (fallback): download from GitHub releases directly
           
-          $exe = "$env:TEMP\innosetup.exe"
-          $downloaded = $false
-          
-          foreach ($url in $urls) {
-            Write-Host "Trying $url..."
-            try {
-              Invoke-WebRequest -Uri $url -OutFile $exe -UseBasicParsing -ErrorAction Stop
-              Write-Host "Downloaded from $url"
-              $downloaded = $true
-              break
-            } catch {
-              Write-Host "Failed: $($_.Exception.Message)" -ForegroundColor Yellow
-            }
-          }
-          
-          if (-not $downloaded) {
-            Write-Error "Could not download Inno Setup from any URL"
-            exit 1
-          }
-          
-          Write-Host "Installing Inno Setup silently..."
-          $proc = Start-Process -FilePath $exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/SP-" -Wait -PassThru
-          
-          if ($proc.ExitCode -ne 0) {
-            Write-Error "Inno Setup installer failed with exit code $($proc.ExitCode)"
-            exit 1
-          }
-          
-          # Verify it's installed
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          $installed = $false
+          
+          # Try winget first
+          Write-Host "Attempting winget install..."
+          try {
+            winget install --id JRSoftware.InnoSetup -e -s winget --silent --accept-source-agreements --accept-package-agreements
+            if (Test-Path $iscc) {
+              Write-Host "Installed via winget"
+              $installed = $true
+            }
+          } catch {
+            Write-Host "winget failed: $($_.Exception.Message)" -ForegroundColor Yellow
+          }
+          
+          # Fallback: direct GitHub download
+          if (-not $installed) {
+            Write-Host "Falling back to GitHub direct download..."
+            $urls = @(
+              "https://github.com/jrsoftware/issrc/releases/download/is-6_7_2/innosetup-6.7.2.exe",
+              "https://github.com/jrsoftware/issrc/releases/download/is-6_7_1/innosetup-6.7.1.exe",
+              "https://github.com/jrsoftware/issrc/releases/download/is-6_6_1/innosetup-6.6.1.exe"
+            )
+            
+            $exe = "$env:TEMP\innosetup.exe"
+            $downloaded = $false
+            
+            foreach ($url in $urls) {
+              Write-Host "Trying $url..."
+              try {
+                Invoke-WebRequest -Uri $url -OutFile $exe -UseBasicParsing -ErrorAction Stop
+                Write-Host "Downloaded successfully"
+                $downloaded = $true
+                break
+              } catch {
+                Write-Host "Failed: $($_.Exception.Message)" -ForegroundColor Yellow
+              }
+            }
+            
+            if (-not $downloaded) {
+              Write-Error "Could not download Inno Setup from any URL"
+              exit 1
+            }
+            
+            Write-Host "Installing Inno Setup silently..."
+            $proc = Start-Process -FilePath $exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/SP-" -Wait -PassThru
+            
+            if ($proc.ExitCode -ne 0) {
+              Write-Error "Inno Setup installer failed with exit code $($proc.ExitCode)"
+              exit 1
+            }
+            
+            $installed = $true
+          }
+          
+          # Verify
           if (-not (Test-Path $iscc)) {
-            Write-Error "ISCC.exe not found at expected path after install"
+            Write-Error "ISCC.exe not found at expected path after install: $iscc"
             exit 1
           }
           
-          Write-Host "Inno Setup installed:"
-          Get-ChildItem $iscc | Format-List Name, Length
+          Write-Host "Inno Setup installed successfully:"
+          Get-ChildItem $iscc | Format-List Name, Length, LastWriteTime
 
       # ----- Update version in .iss file -----
       - name: Update installer version
