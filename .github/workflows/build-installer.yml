@@ -131,32 +131,97 @@ jobs:
           Write-Host "MediaMTX installed:"
           Get-ChildItem "$dest\mediamtx.exe" | Format-List Name, Length
 
-      # ----- Download NSSM -----
+     # ----- Download NSSM -----
       - name: Download NSSM
         shell: pwsh
         run: |
-          # NSSM stable build
-          $url = "https://nssm.cc/release/nssm-2.24.zip"
-          $zip = "$env:TEMP\nssm.zip"
-          $dest = "installer\Bin\nssm"
+          # Strategy 1: try winget (most reliable on GitHub runners)
+          # Strategy 2: try nssm.cc direct URL  
+          # Strategy 3: try Chocolatey CDN mirror
           
-          Write-Host "Downloading NSSM..."
+          $dest = "installer\Bin\nssm"
+          New-Item -Path $dest -ItemType Directory -Force | Out-Null
+          $nssmExe = "$dest\win64\nssm.exe"
+          $installed = $false
+          
+          # ---- Try winget first ----
+          Write-Host "Attempting winget install of NSSM..."
           try {
-            Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+            winget install --id NSSM.NSSM -e --silent --accept-source-agreements --accept-package-agreements --location $env:TEMP\nssm-winget 2>&1 | Out-Host
+            $found = Get-ChildItem -Path "$env:TEMP\nssm-winget" -Recurse -Filter "nssm.exe" -ErrorAction SilentlyContinue
+            if ($found) {
+              Write-Host "Found NSSM via winget"
+              New-Item -Path "$dest\win64" -ItemType Directory -Force | Out-Null
+              New-Item -Path "$dest\win32" -ItemType Directory -Force | Out-Null
+              foreach ($f in $found) {
+                if ($f.FullName -like "*win64*") {
+                  Copy-Item -Path $f.FullName -Destination "$dest\win64\nssm.exe" -Force
+                } elseif ($f.FullName -like "*win32*") {
+                  Copy-Item -Path $f.FullName -Destination "$dest\win32\nssm.exe" -Force
+                }
+              }
+              # If winget didn't preserve folder structure, just copy whatever we found
+              if (-not (Test-Path "$dest\win64\nssm.exe")) {
+                Copy-Item -Path $found[0].FullName -Destination "$dest\win64\nssm.exe" -Force
+              }
+              if (Test-Path "$dest\win64\nssm.exe") { $installed = $true }
+            }
           } catch {
-            Write-Host "nssm.cc unavailable, falling back to mirror..." -ForegroundColor Yellow
-            $url = "https://github.com/kirillkovalenko/nssm/raw/master/release/nssm-2.24.zip"
-            Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+            Write-Host "winget failed: $($_.Exception.Message)" -ForegroundColor Yellow
           }
           
-          Expand-Archive -Path $zip -DestinationPath "$env:TEMP\nssm-extract" -Force
+          # ---- Fallback: direct download ----
+          if (-not $installed) {
+            $urls = @(
+              "https://www.nssm.cc/ci/nssm-2.24-101-g897c7ad.zip",
+              "https://nssm.cc/release/nssm-2.24.zip"
+            )
+            
+            $zip = "$env:TEMP\nssm.zip"
+            $downloaded = $false
+            
+            foreach ($url in $urls) {
+              Write-Host "Trying $url..."
+              try {
+                Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing -ErrorAction Stop
+                $size = (Get-Item $zip).Length
+                if ($size -lt 100000) {
+                  Write-Host "Downloaded file too small ($size bytes), probably an error page" -ForegroundColor Yellow
+                  Remove-Item $zip -Force -ErrorAction SilentlyContinue
+                  continue
+                }
+                Write-Host "Downloaded successfully ($size bytes)"
+                $downloaded = $true
+                break
+              } catch {
+                Write-Host "Failed: $($_.Exception.Message)" -ForegroundColor Yellow
+              }
+            }
+            
+            if (-not $downloaded) {
+              Write-Error "Could not download NSSM from any source"
+              exit 1
+            }
+            
+            Expand-Archive -Path $zip -DestinationPath "$env:TEMP\nssm-extract" -Force
+            $inner = Get-ChildItem "$env:TEMP\nssm-extract" -Directory | Select-Object -First 1
+            
+            if ($inner) {
+              Copy-Item -Path "$($inner.FullName)\*" -Destination $dest -Recurse -Force
+              $installed = $true
+            }
+          }
           
-          $inner = Get-ChildItem "$env:TEMP\nssm-extract" -Directory | Select-Object -First 1
-          New-Item -Path $dest -ItemType Directory -Force | Out-Null
-          Copy-Item -Path "$($inner.FullName)\*" -Destination $dest -Recurse -Force
+          # ---- Verify ----
+          if (-not (Test-Path $nssmExe)) {
+            Write-Error "NSSM not found at expected path: $nssmExe"
+            Write-Host "Contents of $dest :"
+            Get-ChildItem $dest -Recurse | Format-Table FullName, Length
+            exit 1
+          }
           
           Write-Host "NSSM installed:"
-          Get-ChildItem "$dest\win64\nssm.exe" | Format-List Name, Length
+          Get-ChildItem $nssmExe | Format-List Name, Length
 
     # ----- Install Inno Setup -----
       - name: Install Inno Setup
