@@ -1,0 +1,103 @@
+{
+  "_comment_1": "Configuration for autonomous patrol routes and named go-to locations.",
+  "_comment_2": "Replace coordinates with actual property GPS points. All coordinates must be inside flyToConfig.maxRangeMeters.",
+  "_comment_3": "Patrols run multiple waypoints in sequence. Locations are single-destination hover-and-watch.",
+
+  "patrols": {
+    "perimeter": {
+      "name": "Full Perimeter Patrol",
+      "description": "Standard property sweep covering all corners",
+      "estimatedDurationSeconds": 240,
+      "waypoints": [
+        {
+          "name": "Front Gate",
+          "lat": 40.76085,
+          "lon": -111.89110,
+          "altitudeM": 30,
+          "hoverSeconds": 8,
+          "gimbalPitchDeg": -30,
+          "camera": "wide"
+        },
+        {
+          "name": "Northeast Corner",
+          "lat": 40.76095,
+          "lon": -111.89090,
+          "altitudeM": 30,
+          "hoverSeconds": 5,
+          "gimbalPitchDeg": -45,
+          "camera": "wide"
+        },
+        {
+          "name": "Back Yard Center",
+          "lat": 40.76075,
+          "lon": -111.89085,
+          "altitudeM": 25,
+          "hoverSeconds": 10,
+          "gimbalPitchDeg": -60,
+          "camera": "wide"
+        },
+        {
+          "name": "Southwest Corner",
+          "lat": 40.76065,
+          "lon": -111.89115,
+          "altitudeM": 30,
+          "hoverSeconds": 5,
+          "gimbalPitchDeg": -45,
+          "camera": "wide"
+        },
+        {
+          "name": "Return Approach",
+          "lat": 40.76080,
+          "lon": -111.89108,
+          "altitudeM": 20,
+          "hoverSeconds": 3,
+          "gimbalPitchDeg": -90,
+          "camera": "wide"
+        }
+      ]
+    }
+  },
+
+  "locations": {
+    "driveway": {
+      "name": "Driveway",
+      "description": "Hover above the driveway looking down",
+      "lat": 40.76085,
+      "lon": -111.89108,
+      "altitudeM": 25,
+      "gimbalPitchDeg": -90,
+      "camera": "wide",
+      "hoverSeconds": 60
+    },
+    "front_gate": {
+      "name": "Front Gate",
+      "description": "Look at the front entrance",
+      "lat": 40.76090,
+      "lon": -111.89112,
+      "altitudeM": 20,
+      "gimbalPitchDeg": -45,
+      "camera": "wide",
+      "hoverSeconds": 60
+    },
+    "back_yard": {
+      "name": "Back Yard",
+      "description": "Overhead view of back yard",
+      "lat": 40.76072,
+      "lon": -111.89090,
+      "altitudeM": 30,
+      "gimbalPitchDeg": -75,
+      "camera": "wide",
+      "hoverSeconds": 60
+    },
+    "pool": {
+      "name": "Pool Deck",
+      "description": "Hover above pool",
+      "lat": 40.76068,
+      "lon": -111.89098,
+      "altitudeM": 20,
+      "gimbalPitchDeg": -90,
+      "camera": "wide",
+      "hoverSeconds": 60
+    }
+  }
+}

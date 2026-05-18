@@ -1,0 +1,61 @@
+DJI DRONE CONTROL4 SERVER - INSTALLATION COMPLETE
+
+WHAT'S INSTALLED
+================
+
+Windows Services (auto-start on boot if you selected that option):
+  - DroneAPI       - HTTP command API on port 3000
+  - MediaMTX       - Video stream relay
+  - WSBroadcaster  - WebSocket video for iOS
+
+Desktop Applications (start manually after each login):
+  - scrcpy          - DJI controller screen mirror
+  - FFmpeg capture  - Captures the DroneFeed window
+
+YOUR API KEY
+============
+
+Your randomly generated API key is saved in:
+
+  C:\DroneServer\INSTALL-INFO.txt
+
+You will need this when configuring the Control4 driver.
+
+KEEP THIS FILE SECURE - anyone with the API key can control your drone.
+
+NEXT STEPS
+==========
+
+1. PLUG IN THE DJI CONTROLLER
+   Connect the DJI RC Plus 2 controller via USB-C to this server.
+   
+2. AUTHORIZE ADB ON THE CONTROLLER
+   When prompted on the controller's screen, tap "Always allow from
+   this computer."
+
+3. START THE DESKTOP COMPONENTS
+   Run "DJI Drone Server Start" from the desktop or start menu.
+   This starts scrcpy and FFmpeg capture (the parts that need a
+   logged-in desktop session).
+
+4. RUN HEALTH CHECK
+   Run "DJI Drone Server Health Check" to verify everything is
+   working properly.
+
+5. CONFIGURE CONTROL4 DRIVER
+   In Composer Pro, set the drone driver's properties to:
+     - API URL: http://<this server's IP>:3000
+     - API Key: (from INSTALL-INFO.txt)
+     - Video URL: ws://<this server's IP>:8091
+
+TROUBLESHOOTING
+===============
+
+If something doesn't work:
+  - Check C:\DroneServer\docs\TROUBLESHOOTING.md
+  - Run the Health Check to identify which service is down
+  - Check the logs in C:\DroneServer\logs\
+
+For issues that the docs don't cover, see PLAYBOOK.md or contact support.
+
+THANK YOU FOR INSTALLING.

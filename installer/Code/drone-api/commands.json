@@ -1,0 +1,82 @@
+{
+  "_comment": "L1 toggles IR <-> Wide. 'thermal' and 'standard' both fire L1 — user picks which tab represents the next state. L2 toggles Zoom <-> Wide. L3 drops a marker.",
+
+  "thermal": {
+    "adb": "shell input keyevent 131",
+    "description": "L1 — fires thermal toggle (if currently Wide, switches to IR)"
+  },
+  "standard": {
+    "adb": "shell input keyevent 131",
+    "description": "L1 — fires thermal toggle (if currently IR, switches back to Wide)"
+  },
+  "toggle_ir": {
+    "adb": "shell input keyevent 131",
+    "description": "L1 — same as thermal/standard, named for legacy reference"
+  },
+  "zoom": {
+    "adb": "shell input keyevent 132",
+    "description": "L2 — toggles Zoom <-> Wide"
+  },
+  "toggle_zoom": {
+    "adb": "shell input keyevent 132",
+    "description": "L2 — same as zoom, named for legacy reference"
+  },
+  "range": {
+    "adb": "shell input keyevent 132",
+    "description": "L2 placeholder — will be remapped to actual rangefinder activation once UI is mapped"
+  },
+  "drop_marker": {
+    "adb": "shell input keyevent 133",
+    "description": "L3 — drops a navigation marker / waypoint pin"
+  },
+  "r1": {
+    "adb": "shell input keyevent 134",
+    "description": "R1 — function TBD"
+  },
+  "r2": {
+    "adb": "shell input keyevent 135",
+    "description": "R2 — function TBD"
+  },
+  "r3": {
+    "adb": "shell input keyevent 136",
+    "description": "R3 — function TBD"
+  },
+
+  "rth": {
+    "adb": "shell input tap 1820 880",
+    "description": "Return To Home (PLACEHOLDER coords — measure from screenshot)"
+  },
+  "land": {
+    "adb": "shell input tap 1820 940",
+    "description": "Land drone (PLACEHOLDER coords — measure from screenshot)"
+  },
+
+  "home_button": {
+    "adb": "shell input keyevent 3",
+    "description": "Android Home button on controller"
+  },
+  "back_button": {
+    "adb": "shell input keyevent 4",
+    "description": "Android Back button"
+  },
+  "screen_wake": {
+    "adb": "shell input keyevent 26",
+    "description": "Toggle controller screen on/off"
+  },
+  "stay_awake_on": {
+    "adb": "shell svc power stayon true",
+    "description": "Keep screen awake while USB connected"
+  },
+  "stay_awake_off": {
+    "adb": "shell svc power stayon false",
+    "description": "Allow normal screen sleep"
+  },
+  "launch_pilot2": {
+    "adb": "shell monkey -p dji.pilot2 -c android.intent.category.LAUNCHER 1",
+    "description": "Launch DJI Pilot 2 app"
+  },
+  "force_stop_pilot2": {
+    "adb": "shell am force-stop dji.pilot2",
+    "description": "Force-stop DJI Pilot 2"
+  }
+}

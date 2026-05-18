@@ -1,0 +1,15 @@
+{
+  "apiKey": "WILL_BE_REPLACED_BY_INSTALLER",
+  "adbPath": "C:\\DroneServer\\bin\\platform-tools\\adb.exe",
+  "port": 3000,
+  "bindAddress": "0.0.0.0",
+  "adbTimeoutMs": 8000,
+  "flyToConfig": {
+    "baseLat": 0.0,
+    "baseLon": 0.0,
+    "maxRangeMeters": 500,
+    "droneSpeedMps": 10,
+    "startupOverheadSec": 10,
+    "requireAccuracyMeters": 50
+  }
+}

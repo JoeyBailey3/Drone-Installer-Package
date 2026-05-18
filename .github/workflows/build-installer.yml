@@ -1,0 +1,260 @@
+# ============================================================================
+# GitHub Actions Workflow: Build Drone Server Installer
+# ----------------------------------------------------------------------------
+# Triggers:
+#   - Push of a version tag (e.g., v1.0.0)
+#   - Manual dispatch from the Actions tab
+#
+# What it does:
+#   1. Spins up a Windows runner
+#   2. Downloads all third-party binaries (FFmpeg, scrcpy, ADB, MediaMTX, NSSM)
+#   3. Installs Inno Setup
+#   4. Compiles the installer .iss into a .exe
+#   5. Creates a GitHub Release with the .exe attached
+#
+# To trigger:
+#   git tag v1.0.0
+#   git push origin v1.0.0
+# ============================================================================
+
+name: Build Installer
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:    # allows manual triggering from GitHub UI
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      # ----- Checkout source -----
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ----- Get version from tag (or use 'dev' for manual builds) -----
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -match '^refs/tags/v(.+)$') {
+            $version = $matches[1]
+          } else {
+            $version = "dev-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+          }
+          Write-Host "Building version: $version"
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      # ----- Download FFmpeg -----
+      - name: Download FFmpeg
+        shell: pwsh
+        run: |
+          $url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+          $zip = "$env:TEMP\ffmpeg.zip"
+          $dest = "installer\Bin\ffmpeg"
+          
+          Write-Host "Downloading FFmpeg..."
+          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+          
+          Write-Host "Extracting FFmpeg..."
+          Expand-Archive -Path $zip -DestinationPath "$env:TEMP\ffmpeg-extract" -Force
+          
+          # The zip has a versioned folder inside, get its contents
+          $inner = Get-ChildItem "$env:TEMP\ffmpeg-extract" -Directory | Select-Object -First 1
+          New-Item -Path $dest -ItemType Directory -Force | Out-Null
+          Copy-Item -Path "$($inner.FullName)\*" -Destination $dest -Recurse -Force
+          
+          Write-Host "FFmpeg installed:"
+          Get-ChildItem "$dest\bin\ffmpeg.exe" | Format-List Name, Length
+
+      # ----- Download scrcpy -----
+      - name: Download scrcpy
+        shell: pwsh
+        run: |
+          # Get latest release URL from GitHub API
+          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/Genymobile/scrcpy/releases/latest" -UseBasicParsing
+          $asset = $release.assets | Where-Object { $_.name -like "*win64*.zip" } | Select-Object -First 1
+          
+          $url = $asset.browser_download_url
+          $zip = "$env:TEMP\scrcpy.zip"
+          $dest = "installer\Bin\scrcpy"
+          
+          Write-Host "Downloading scrcpy from $url"
+          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+          
+          Expand-Archive -Path $zip -DestinationPath "$env:TEMP\scrcpy-extract" -Force
+          
+          # scrcpy zip has a top-level folder
+          $inner = Get-ChildItem "$env:TEMP\scrcpy-extract" -Directory | Select-Object -First 1
+          New-Item -Path $dest -ItemType Directory -Force | Out-Null
+          Copy-Item -Path "$($inner.FullName)\*" -Destination $dest -Recurse -Force
+          
+          Write-Host "scrcpy installed:"
+          Get-ChildItem "$dest\scrcpy.exe" | Format-List Name, Length
+
+      # ----- Download Android Platform Tools (ADB) -----
+      - name: Download Android Platform Tools
+        shell: pwsh
+        run: |
+          $url = "https://dl.google.com/android/repository/platform-tools-latest-windows.zip"
+          $zip = "$env:TEMP\platform-tools.zip"
+          $dest = "installer\Bin"
+          
+          Write-Host "Downloading platform-tools..."
+          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+          
+          Expand-Archive -Path $zip -DestinationPath $dest -Force
+          
+          Write-Host "Platform-tools installed:"
+          Get-ChildItem "$dest\platform-tools\adb.exe" | Format-List Name, Length
+
+      # ----- Download MediaMTX -----
+      - name: Download MediaMTX
+        shell: pwsh
+        run: |
+          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/bluenviron/mediamtx/releases/latest" -UseBasicParsing
+          $asset = $release.assets | Where-Object { $_.name -like "*windows_amd64.zip" } | Select-Object -First 1
+          
+          $url = $asset.browser_download_url
+          $zip = "$env:TEMP\mediamtx.zip"
+          $dest = "installer\Bin\mediamtx"
+          
+          Write-Host "Downloading MediaMTX from $url"
+          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+          
+          New-Item -Path $dest -ItemType Directory -Force | Out-Null
+          Expand-Archive -Path $zip -DestinationPath $dest -Force
+          
+          Write-Host "MediaMTX installed:"
+          Get-ChildItem "$dest\mediamtx.exe" | Format-List Name, Length
+
+      # ----- Download NSSM -----
+      - name: Download NSSM
+        shell: pwsh
+        run: |
+          # NSSM stable build
+          $url = "https://nssm.cc/release/nssm-2.24.zip"
+          $zip = "$env:TEMP\nssm.zip"
+          $dest = "installer\Bin\nssm"
+          
+          Write-Host "Downloading NSSM..."
+          try {
+            Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+          } catch {
+            Write-Host "nssm.cc unavailable, falling back to mirror..." -ForegroundColor Yellow
+            $url = "https://github.com/kirillkovalenko/nssm/raw/master/release/nssm-2.24.zip"
+            Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+          }
+          
+          Expand-Archive -Path $zip -DestinationPath "$env:TEMP\nssm-extract" -Force
+          
+          $inner = Get-ChildItem "$env:TEMP\nssm-extract" -Directory | Select-Object -First 1
+          New-Item -Path $dest -ItemType Directory -Force | Out-Null
+          Copy-Item -Path "$($inner.FullName)\*" -Destination $dest -Recurse -Force
+          
+          Write-Host "NSSM installed:"
+          Get-ChildItem "$dest\win64\nssm.exe" | Format-List Name, Length
+
+      # ----- Install Inno Setup -----
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          $url = "https://files.jrsoftware.org/is/6/innosetup-6.4.3.exe"
+          $exe = "$env:TEMP\innosetup.exe"
+          
+          Write-Host "Downloading Inno Setup..."
+          Invoke-WebRequest -Uri $url -OutFile $exe -UseBasicParsing
+          
+          Write-Host "Installing Inno Setup silently..."
+          $proc = Start-Process -FilePath $exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/SP-" -Wait -PassThru
+          
+          if ($proc.ExitCode -ne 0) {
+            Write-Error "Inno Setup installer failed with exit code $($proc.ExitCode)"
+            exit 1
+          }
+          
+          Write-Host "Inno Setup installed:"
+          Get-ChildItem "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" | Format-List Name, Length
+
+      # ----- Update version in .iss file -----
+      - name: Update installer version
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $iss = "installer\InnoSetup\DroneServerSetup.iss"
+          
+          $content = Get-Content $iss -Raw
+          $content = $content -replace '#define MyAppVersion ".+"', "#define MyAppVersion `"$version`""
+          
+          # Save without BOM
+          [System.IO.File]::WriteAllText((Resolve-Path $iss), $content, (New-Object System.Text.UTF8Encoding $false))
+          
+          Write-Host "Set installer version to: $version"
+
+      # ----- Compile installer -----
+      - name: Compile installer
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          $iss = "installer\InnoSetup\DroneServerSetup.iss"
+          
+          Write-Host "Compiling installer..."
+          & $iscc $iss
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Inno Setup compilation failed"
+            exit 1
+          }
+          
+          Write-Host ""
+          Write-Host "Compilation output:"
+          Get-ChildItem "installer\InnoSetup\Output\" | Format-Table Name, Length, LastWriteTime
+
+      # ----- Upload artifact (for manual builds or inspection) -----
+      - name: Upload installer as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DroneServer-Setup-${{ steps.version.outputs.version }}
+          path: installer/InnoSetup/Output/*.exe
+          retention-days: 30
+
+      # ----- Create GitHub Release (only on tag) -----
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Drone Server Installer v${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+          body: |
+            ## DJI Drone Control4 Server Installer
+            
+            Version: ${{ steps.version.outputs.version }}
+            Build: ${{ github.sha }}
+            
+            ### Download
+            
+            Grab `DroneServer-Setup-v${{ steps.version.outputs.version }}.exe` below.
+            
+            ### Install Instructions
+            
+            1. Download the .exe to the customer's Windows server
+            2. Right-click → Run as administrator
+            3. Click through the wizard, filling in customer-specific values
+            4. Follow the on-screen post-install steps
+            
+            See the repository README for detailed install instructions.
+            
+            ### Requirements
+            
+            - Windows 10/11 Pro or Windows Server
+            - Node.js LTS installed (install before running this installer)
+            - Administrator access
+            - DJI RC Plus 2 controller available to plug in
+          files: installer/InnoSetup/Output/*.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,38 @@
+DJI DRONE CONTROL4 SERVER INSTALLATION
+
+Before installing, please make sure:
+
+1. NODE.JS LTS IS INSTALLED
+   The drone services are written in Node.js. Download and install
+   the LTS version from https://nodejs.org/ before continuing.
+
+2. YOU HAVE ADMINISTRATOR ACCESS
+   This installer must run with administrator privileges to install
+   Windows services and configure the firewall.
+
+3. PORTS ARE AVAILABLE
+   The following ports must not be in use by other software:
+     3000 - Drone Command API
+     8554 - RTSP video stream
+     8888 - HLS video stream  
+     8889 - WebRTC video stream
+     8091 - WebSocket video (iOS)
+     9997 - MediaMTX management API
+     8189 - WebRTC UDP
+
+4. ANTI-VIRUS EXCEPTION (if needed)
+   Some anti-virus software may flag the installer or the bundled
+   binaries (FFmpeg, scrcpy). Add C:\DroneServer to your AV exception
+   list if you experience issues.
+
+5. CUSTOMER INFORMATION READY
+   You will be asked for:
+     - Customer / site name
+     - Server LAN IP address
+     - LAN subnet (e.g., 10.0.0.0/16)
+     - Drone home GPS coordinates (latitude, longitude)
+     - Geofence radius in meters
+
+Total installation time: approximately 5-10 minutes.
+
+Click Next to continue.

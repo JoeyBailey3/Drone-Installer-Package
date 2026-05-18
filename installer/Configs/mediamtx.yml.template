@@ -1,0 +1,15 @@
+# MediaMTX configuration - overwritten by installer customer config script
+rtspAddress: :8554
+hlsAddress: :8888
+hlsAllowOrigins: ['*']
+hlsAlwaysRemux: yes
+webrtcAddress: :8889
+webrtcAllowOrigins: ['*']
+webrtcLocalUDPAddress: :8189
+webrtcICEServers2: []
+webrtcAdditionalHosts: ['SERVER_IP_HERE']
+api: yes
+apiAddress: :9997
+paths:
+  standard_clean:
+    source: publisher

@@ -1,0 +1,68 @@
+# ============================================================================
+# Drone Installer Package - .gitignore
+# ============================================================================
+
+# ----- SECRETS (NEVER COMMIT) -----
+config.json
+config.local.json
+*.secret
+*.secret.*
+.env
+.env.*
+!.env.example
+api-key.txt
+INSTALL-INFO.txt
+customer-config.ini
+
+# ----- BUNDLED BINARIES -----
+# These are downloaded by GitHub Actions during build, never committed
+installer/Bin/ffmpeg/
+installer/Bin/scrcpy/
+installer/Bin/platform-tools/
+installer/Bin/mediamtx/
+installer/Bin/nssm/
+# Keep the README.md that explains the folder
+!installer/Bin/README.md
+
+# ----- BUILD OUTPUTS -----
+installer/InnoSetup/Output/
+installer/InnoSetup/*.exe
+*.iss.bak
+
+# ----- NODE -----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+package-lock.json.backup
+
+# ----- LOGS -----
+*.log
+logs/
+
+# ----- WINDOWS -----
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ----- MACOS -----
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ----- EDITORS -----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ----- TEMP & BACKUP -----
+*.tmp
+*.bak
+*.backup
+*.old
+
+# ----- ARCHIVES -----
+*.zip
+*.tar.gz
+*.7z

@@ -1,0 +1,15 @@
+{
+  "name": "drone-api",
+  "version": "1.4.0",
+  "description": "HTTP API for DJI drone control via ADB",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

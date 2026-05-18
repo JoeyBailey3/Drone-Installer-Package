@@ -1,0 +1,33 @@
+{
+  "_comment": "Patrol routes and named locations. Update coordinates per-customer property.",
+  "patrols": {
+    "perimeter": {
+      "name": "Full Perimeter Patrol",
+      "description": "Standard property sweep",
+      "estimatedDurationSeconds": 240,
+      "waypoints": [
+        {
+          "name": "Waypoint 1",
+          "lat": 0.0,
+          "lon": 0.0,
+          "altitudeM": 30,
+          "hoverSeconds": 5,
+          "gimbalPitchDeg": -45,
+          "camera": "wide"
+        }
+      ]
+    }
+  },
+  "locations": {
+    "front_gate": {
+      "name": "Front Gate",
+      "description": "Look at the front entrance",
+      "lat": 0.0,
+      "lon": 0.0,
+      "altitudeM": 20,
+      "gimbalPitchDeg": -45,
+      "camera": "wide",
+      "hoverSeconds": 60
+    }
+  }
+}

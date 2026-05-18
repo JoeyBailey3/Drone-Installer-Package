@@ -1,0 +1,15 @@
+{
+  "name": "drone-ws-broadcaster",
+  "version": "1.0.0",
+  "description": "WebSocket MJPEG broadcaster for iOS WKWebView-compatible drone video",
+  "main": "ws-broadcaster.js",
+  "scripts": {
+    "start": "node ws-broadcaster.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

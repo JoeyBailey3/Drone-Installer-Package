@@ -1,0 +1,23 @@
+PROPRIETARY SOFTWARE LICENSE
+
+Copyright (c) 2026 Your Company Name. All rights reserved.
+
+This software is proprietary and confidential. It is licensed for use 
+only by authorized customers under the terms of a separate license 
+agreement. Unauthorized copying, distribution, or use is prohibited.
+
+This installer bundles third-party open-source software:
+  - FFmpeg (LGPL/GPL) - https://ffmpeg.org/
+  - scrcpy (Apache 2.0) - https://github.com/Genymobile/scrcpy
+  - Android Platform Tools / ADB - Android Open Source Project
+  - MediaMTX (MIT) - https://github.com/bluenviron/mediamtx
+  - NSSM (Public Domain) - https://nssm.cc/
+  - Node.js (MIT) - https://nodejs.org/
+
+Each component is licensed under its own terms. Source code and 
+license texts for the bundled components are available from the 
+upstream projects linked above.
+
+Use of this software constitutes acceptance of these terms.
+
+By clicking "I accept" you agree to the license terms.
