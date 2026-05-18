@@ -48,6 +48,42 @@ jobs:
           Write-Host "Building version: $version"
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
+        # ----- Download portable Node.js LTS -----
+      - name: Download Node.js
+        shell: pwsh
+        run: |
+          $dest = "installer\Bin\nodejs"
+          New-Item -Path $dest -ItemType Directory -Force | Out-Null
+          
+          # Get latest LTS version from Node.js distribution server
+          Write-Host "Fetching latest Node.js LTS version..."
+          $indexJson = Invoke-RestMethod -Uri "https://nodejs.org/dist/index.json" -UseBasicParsing
+          $lts = $indexJson | Where-Object { $_.lts -ne $false } | Select-Object -First 1
+          $version = $lts.version
+          Write-Host "Latest LTS: $version"
+          
+          # Construct download URL for Windows x64 zip
+          $url = "https://nodejs.org/dist/$version/node-$version-win-x64.zip"
+          $zip = "$env:TEMP\nodejs.zip"
+          
+          Write-Host "Downloading from $url"
+          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+          
+          $size = (Get-Item $zip).Length
+          Write-Host "Downloaded $([math]::Round($size / 1MB, 1)) MB"
+          
+          # Extract
+          Write-Host "Extracting Node.js..."
+          Expand-Archive -Path $zip -DestinationPath "$env:TEMP\nodejs-extract" -Force
+          
+          # The zip has a versioned folder inside - move contents out one level
+          $inner = Get-ChildItem "$env:TEMP\nodejs-extract" -Directory | Select-Object -First 1
+          Copy-Item -Path "$($inner.FullName)\*" -Destination $dest -Recurse -Force
+          
+          Write-Host "Node.js bundled:"
+          Get-ChildItem "$dest\node.exe" | Format-List Name, Length
+          Get-ChildItem "$dest\npm.cmd" | Format-List Name, Length
+
       # ----- Download FFmpeg -----
       - name: Download FFmpeg
         shell: pwsh
