@@ -158,15 +158,36 @@ jobs:
           Write-Host "NSSM installed:"
           Get-ChildItem "$dest\win64\nssm.exe" | Format-List Name, Length
 
-      # ----- Install Inno Setup -----
+     # ----- Install Inno Setup -----
       - name: Install Inno Setup
         shell: pwsh
         run: |
-          $url = "https://files.jrsoftware.org/is/6/innosetup-6.4.3.exe"
-          $exe = "$env:TEMP\innosetup.exe"
+          # Try latest version first, fall back to known-good versions
+          $urls = @(
+            "https://files.jrsoftware.org/is/6/innosetup-6.7.1.exe",
+            "https://files.jrsoftware.org/is/6/innosetup-6.6.1.exe",
+            "https://files.jrsoftware.org/is/6/innosetup-6.5.4.exe"
+          )
           
-          Write-Host "Downloading Inno Setup..."
-          Invoke-WebRequest -Uri $url -OutFile $exe -UseBasicParsing
+          $exe = "$env:TEMP\innosetup.exe"
+          $downloaded = $false
+          
+          foreach ($url in $urls) {
+            Write-Host "Trying $url..."
+            try {
+              Invoke-WebRequest -Uri $url -OutFile $exe -UseBasicParsing -ErrorAction Stop
+              Write-Host "Downloaded from $url"
+              $downloaded = $true
+              break
+            } catch {
+              Write-Host "Failed: $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+          }
+          
+          if (-not $downloaded) {
+            Write-Error "Could not download Inno Setup from any URL"
+            exit 1
+          }
           
           Write-Host "Installing Inno Setup silently..."
           $proc = Start-Process -FilePath $exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/SP-" -Wait -PassThru
@@ -176,8 +197,15 @@ jobs:
             exit 1
           }
           
+          # Verify it's installed
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            Write-Error "ISCC.exe not found at expected path after install"
+            exit 1
+          }
+          
           Write-Host "Inno Setup installed:"
-          Get-ChildItem "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" | Format-List Name, Length
+          Get-ChildItem $iscc | Format-List Name, Length
 
       # ----- Update version in .iss file -----
       - name: Update installer version
