@@ -1,11 +1,12 @@
 ; ============================================================================
 ; DJI Drone + Control4 Integration Server Installer
 ; ----------------------------------------------------------------------------
+; v1.1 — Bundles portable Node.js, eliminates customer prerequisite
 ; All file references use ..\ to go up from InnoSetup/ to the installer/ root
 ; ============================================================================
 
 #define MyAppName "DJI Drone Control4 Server"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.1.0"
 #define MyAppPublisher "Your Company Name"
 #define MyAppURL "https://github.com/JoeyBailey3/Drone-Installer-Package"
 #define MyAppExeName "DroneServerStart.bat"
@@ -56,6 +57,7 @@ Source: "..\Code\drone-api\*"; DestDir: "{app}\drone-api"; Flags: ignoreversion 
 Source: "..\Code\ws-broadcaster\*"; DestDir: "{app}\ws-broadcaster"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; ----- Bundled binaries -----
+Source: "..\Bin\nodejs\*"; DestDir: "{app}\bin\nodejs"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\Bin\ffmpeg\*"; DestDir: "{app}\bin\ffmpeg"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\Bin\scrcpy\*"; DestDir: "{app}\bin\scrcpy"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\Bin\platform-tools\*"; DestDir: "{app}\bin\platform-tools"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -86,9 +88,9 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\DJI Drone Server"; Filename: "{app}\DroneServerStart.bat"; Tasks: desktopicon
 
 [Run]
-; ----- Post-install: Node.js dependencies -----
-Filename: "{cmd}"; Parameters: "/C cd /D ""{app}\drone-api"" && npm install --production"; StatusMsg: "Installing Drone API dependencies..."; Flags: runhidden
-Filename: "{cmd}"; Parameters: "/C cd /D ""{app}\ws-broadcaster"" && npm install --production"; StatusMsg: "Installing WebSocket broadcaster dependencies..."; Flags: runhidden
+; ----- Post-install: Run npm install with BUNDLED Node.js -----
+Filename: "{app}\bin\nodejs\node.exe"; Parameters: """{app}\bin\nodejs\node_modules\npm\bin\npm-cli.js"" install --production --prefix ""{app}\drone-api"""; StatusMsg: "Installing Drone API dependencies (using bundled Node.js)..."; Flags: runhidden
+Filename: "{app}\bin\nodejs\node.exe"; Parameters: """{app}\bin\nodejs\node_modules\npm\bin\npm-cli.js"" install --production --prefix ""{app}\ws-broadcaster"""; StatusMsg: "Installing WebSocket broadcaster dependencies (using bundled Node.js)..."; Flags: runhidden
 
 ; ----- Run customer configuration wizard -----
 Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -File ""{app}\scripts\04-Configure-Customer.ps1"" -InstallPath ""{app}"""; StatusMsg: "Configuring for customer..."; Flags: runhidden
