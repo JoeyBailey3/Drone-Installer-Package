@@ -1,14 +1,7 @@
 # ============================================================================
-# Install Windows Services via NSSM
+# Install Windows Services via NSSM (uses bundled Node.js)
 # ----------------------------------------------------------------------------
-# Wraps the headless backend services so they auto-start on boot:
-#   - DroneAPI         (Node.js drone command API)
-#   - MediaMTX         (stream relay)
-#   - WSBroadcaster    (WebSocket MJPEG for iOS)
-#
-# Does NOT wrap scrcpy or the gdigrab FFmpeg — those need the Windows
-# desktop session and must be started after login (via Task Scheduler in
-# a separate script, or manually).
+# v1.1 - Uses bundled Node.js from {app}\bin\nodejs instead of system Node
 # ============================================================================
 
 param(
@@ -25,20 +18,21 @@ function Write-Log {
 
 $nssm = Join-Path $InstallPath "bin\nssm\win64\nssm.exe"
 if (-not (Test-Path $nssm)) {
-    # Try alternate location
     $nssm = Join-Path $InstallPath "bin\nssm\nssm.exe"
 }
 if (-not (Test-Path $nssm)) {
-    Write-Log "NSSM not found at $nssm" "ERROR"
+    Write-Log "NSSM not found" "ERROR"
     exit 1
 }
 
-# Resolve node.exe — assumes Node.js is installed in PATH
-$node = (Get-Command node -ErrorAction SilentlyContinue).Source
-if (-not $node) {
-    Write-Log "node.exe not found in PATH. Install Node.js LTS first." "ERROR"
+# Use BUNDLED Node.js (not system Node)
+$node = Join-Path $InstallPath "bin\nodejs\node.exe"
+if (-not (Test-Path $node)) {
+    Write-Log "Bundled node.exe not found at $node" "ERROR"
     exit 1
 }
+
+Write-Log "Using bundled Node.js: $node"
 
 function Install-DroneService {
     param(
@@ -52,42 +46,35 @@ function Install-DroneService {
     
     Write-Log "Installing service: $Name"
     
-    # Remove if exists
     $existing = Get-Service -Name $Name -ErrorAction SilentlyContinue
     if ($existing) {
         if ($existing.Status -eq "Running") {
-            Write-Log "Stopping existing service $Name"
             Stop-Service -Name $Name -Force -ErrorAction SilentlyContinue
             Start-Sleep -Seconds 2
         }
-        Write-Log "Removing existing service $Name"
         & $nssm remove $Name confirm | Out-Null
         Start-Sleep -Seconds 1
     }
     
-    # Install
     & $nssm install $Name $ExePath $Arguments | Out-Null
     & $nssm set $Name AppDirectory $WorkingDir | Out-Null
     & $nssm set $Name DisplayName $DisplayName | Out-Null
     & $nssm set $Name Description $Description | Out-Null
     & $nssm set $Name Start SERVICE_AUTO_START | Out-Null
     
-    # Log output
     $logDir = Join-Path $InstallPath "logs"
     if (-not (Test-Path $logDir)) { New-Item -Path $logDir -ItemType Directory -Force | Out-Null }
     & $nssm set $Name AppStdout (Join-Path $logDir "$Name-stdout.log") | Out-Null
     & $nssm set $Name AppStderr (Join-Path $logDir "$Name-stderr.log") | Out-Null
     & $nssm set $Name AppRotateFiles 1 | Out-Null
-    & $nssm set $Name AppRotateBytes 10485760 | Out-Null  # 10 MB
+    & $nssm set $Name AppRotateBytes 10485760 | Out-Null
     
-    # Restart policy
     & $nssm set $Name AppExit Default Restart | Out-Null
-    & $nssm set $Name AppRestartDelay 5000 | Out-Null  # 5 second delay between restarts
+    & $nssm set $Name AppRestartDelay 5000 | Out-Null
     
     Write-Log "Service $Name installed"
 }
 
-# ----- Drone API -----
 Install-DroneService `
     -Name "DroneAPI" `
     -ExePath $node `
@@ -96,7 +83,6 @@ Install-DroneService `
     -DisplayName "DJI Drone Command API" `
     -Description "HTTP API for sending commands to DJI controller via ADB"
 
-# ----- MediaMTX -----
 $mediamtxExe = Join-Path $InstallPath "bin\mediamtx\mediamtx.exe"
 $mediamtxDir = Join-Path $InstallPath "bin\mediamtx"
 Install-DroneService `
@@ -107,7 +93,6 @@ Install-DroneService `
     -DisplayName "DJI Drone MediaMTX Stream Relay" `
     -Description "RTSP/HLS/WebRTC stream relay server"
 
-# ----- WebSocket Broadcaster -----
 Install-DroneService `
     -Name "WSBroadcaster" `
     -ExePath $node `
